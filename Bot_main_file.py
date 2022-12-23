@@ -21,6 +21,12 @@ button_purchase_of_goods = types.InlineKeyboardButton("Купівля товар
 button_training = types.InlineKeyboardButton("Тренування")
 main_keyboard.add(button_work_with_a_cash, button_purchase_of_goods, button_training)
 
+work_with_a_cash_keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+button_view_balance = types.InlineKeyboardButton("Переглянути залишок")
+button_top_up_the_account = types.InlineKeyboardButton("Поповнити рахунок")
+button_return_to_the_main_menu = types.InlineKeyboardButton("Повернутись у головне меню")
+work_with_a_cash_keyboard.add(button_view_balance, button_top_up_the_account, button_return_to_the_main_menu)
+
 ivan = telebot.TeleBot(config["token"])
 
 
@@ -44,7 +50,10 @@ def get_text(message):
     elif message.text.lower() == "реєстрація":
         ivan.register_next_step_handler(ivan.send_message(message.chat.id, "Придумайте пароль (не менше шести "
                                                                            "символів)"), registration)
-
+    elif message.text.lower() == "Робота з рахунком":
+        ivan.register_next_step_handler(ivan.send_message(message.chat.id, "Ви можете перевірити залишок на рахунку "
+                                                                           "або поповнити його",
+                                                          reply_markup=work_with_a_cash_keyboard))
 
 
 def registration(message):
@@ -97,4 +106,8 @@ def authorization(message):
         ivan.send_message(message.chat.id, f"Невірно введений пароль, або ви не зареєстровані у системиі")
 
 
+def view_balance(message):
+    file = open(clients, "r", encoding='utf-8')
+    all_users = file.read().split("\n")
+    file.close()
 ivan.polling(none_stop=True, interval=0)
