@@ -50,11 +50,8 @@ def get_text(message):
     elif message.text.lower() == "реєстрація":
         ivan.register_next_step_handler(ivan.send_message(message.chat.id, "Придумайте пароль (не менше шести "
                                                                            "символів)"), registration)
-    elif message.text.lower() == "Робота з рахунком":
-        ivan.register_next_step_handler(ivan.send_message(message.chat.id, "Ви можете перевірити залишок на рахунку "
-                                                                           "або поповнити його",
-                                                          reply_markup=work_with_a_cash_keyboard))
-
+    elif message.text.lower() == "pобота з рахунком":
+        ivan.register_next_step_handler(ivan.send_message(message.chat.id, "Рахунок:"), cash)
 
 def registration(message):
     if len(message.text) < 6:  # Перевіряємо корректність введеного паролю
@@ -110,4 +107,9 @@ def view_balance(message):
     file = open(clients, "r", encoding='utf-8')
     all_users = file.read().split("\n")
     file.close()
+
+
+def cash(message):
+    ivan.register_next_step_handler(ivan.send_message(message.chat.id, "Рахунок:", reply_markup=work_with_a_cash_keyboard))
+
 ivan.polling(none_stop=True, interval=0)
