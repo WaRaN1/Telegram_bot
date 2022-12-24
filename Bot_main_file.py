@@ -22,10 +22,10 @@ button_training = types.InlineKeyboardButton("Тренування")
 main_keyboard.add(button_work_with_a_cash, button_purchase_of_goods, button_training)
 
 work_with_a_cash_keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-button_view_balance = types.InlineKeyboardButton("Переглянути залишок")
+button_check_account = types.InlineKeyboardButton("Перевірити рахунок")
 button_top_up_the_account = types.InlineKeyboardButton("Поповнити рахунок")
 button_return_to_the_main_menu = types.InlineKeyboardButton("Повернутись у головне меню")
-work_with_a_cash_keyboard.add(button_view_balance, button_top_up_the_account, button_return_to_the_main_menu)
+work_with_a_cash_keyboard.add(button_check_account, button_top_up_the_account, button_return_to_the_main_menu)
 
 ivan = telebot.TeleBot(config["token"])
 
@@ -50,8 +50,41 @@ def get_text(message):
     elif message.text.lower() == "реєстрація":
         ivan.register_next_step_handler(ivan.send_message(message.chat.id, "Придумайте пароль (не менше шести "
                                                                            "символів)"), registration)
-    elif message.text.lower() == "pобота з рахунком":
-        ivan.register_next_step_handler(ivan.send_message(message.chat.id, "Рахунок:"), cash)
+    elif message.text.lower() == "робота з рахунком" or message.text.lower() == "перевірити рахунок":
+        ivan.send_message(message.chat.id, f"Стан вашого рахунку - {check_account(message)} ₴",
+                          reply_markup=work_with_a_cash_keyboard)
+
+    elif message.text.lower() == "поповнити рахунок":
+        ivan.register_next_step_handler(ivan.send_message(message.chat.id, "На яку суму бажаєте поповнити рахунок?"),
+                                        plas_balance)
+
+    elif message.text == "TV":
+        inlines = telebot.types.InlineKeyboardMarkup()
+        for elem in product_tv:
+            inlines.add(telebot.types.InlineKeyboardButton(text=elem, callback_data=elem))
+        ivan.send_message(message.chat.id, "TV:", reply_markup=inlines)
+
+
+    elif message.text.lower() == "повернутись у головне меню":
+        ivan.send_message(message.chat.id, 'Повернення у головне меню', reply_markup=main_keyboard)
+
+
+def check_account(message):  # Функція для перевірки баланса
+    file = open(clients, "r", encoding='utf-8')
+    all_users = file.read().split("\n")
+    file.close()
+    user_balance = ""
+    for el in all_users:
+        if el.split("/")[0] == str(message.chat.id):
+            user_balance = float(el.split("/")[3])
+    return user_balance
+
+
+@ivan.callback_query_handler(func=lambda call: True)
+def callback_data(call):
+    if call.data:
+        ivan.send_message(call.message.chat.id, "Зробіть подальший вибір")
+
 
 def registration(message):
     if len(message.text) < 6:  # Перевіряємо корректність введеного паролю
@@ -103,13 +136,31 @@ def authorization(message):
         ivan.send_message(message.chat.id, f"Невірно введений пароль, або ви не зареєстровані у системиі")
 
 
-def view_balance(message):
+def plas_balance(message):
     file = open(clients, "r", encoding='utf-8')
     all_users = file.read().split("\n")
     file.close()
+    for ind in range(len(all_users)):
+        if all_users[ind].split("/")[0] == str(message.chat.id):
+            all_users[
+                ind] = f"{all_users[ind].split('/')[0]}/{all_users[ind].split('/')[1]}/{all_users[ind].split('/')[2]}/{float(all_users[ind].split('/')[3]) + float(message.text)}"
+            break
+    var_var = ''
+    for ind in range(len(all_users)):
+        var_var += f'{all_users[ind]}\n'
+    file = open(clients, "w", encoding='utf-8')
+    file.write(var_var[0:len(var_var) - 1])
+    file.close()
+    plas_balance = "https://www.portmone.com.ua/popovnyty-rakhunok-mobilnoho?gclid=Cj0KCQiA45qdBhD-ARIsAOHbVdFrlNp38FMOhwif78In6fNRi-hlSVrfjlOp6US5LeP3dsr37Z9OzjQaAvNyEALw_wcB"
+    ivan.send_message(message.chat.id, plas_balance)
 
 
 def cash(message):
-    ivan.register_next_step_handler(ivan.send_message(message.chat.id, "Рахунок:", reply_markup=work_with_a_cash_keyboard))
+    pass
+
+
+def menu(message):
+    pass
+
 
 ivan.polling(none_stop=True, interval=0)
