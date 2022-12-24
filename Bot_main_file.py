@@ -4,6 +4,7 @@ from telebot import types
 import time
 
 clients = os.path.join("Data_base", "Clients.txt")
+product_shop = os.path.join("Data_base", "Shop.txt")
 
 config = {
     "name": "Python_waran_bot",
@@ -26,6 +27,13 @@ button_check_account = types.InlineKeyboardButton("Перевірити раху
 button_top_up_the_account = types.InlineKeyboardButton("Поповнити рахунок")
 button_return_to_the_main_menu = types.InlineKeyboardButton("Повернутись у головне меню")
 work_with_a_cash_keyboard.add(button_check_account, button_top_up_the_account, button_return_to_the_main_menu)
+
+by_keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+button_purchase_of_goods = types.InlineKeyboardButton("Купівля товарів")
+button_check_account = types.InlineKeyboardButton("Перевірити рахунок")
+button_view_cart = types.InlineKeyboardButton("Переглянути кошик")
+button_clear_the_basket= types.InlineKeyboardButton("Очистити кошик")
+by_keyboard.add(button_purchase_of_goods,button_view_cart, button_check_account, button_clear_the_basket)
 
 ivan = telebot.TeleBot(config["token"])
 
@@ -50,7 +58,7 @@ def get_text(message):
     elif message.text.lower() == "реєстрація":
         ivan.register_next_step_handler(ivan.send_message(message.chat.id, "Придумайте пароль (не менше шести "
                                                                            "символів)"), registration)
-    elif message.text.lower() == "робота з рахунком" or message.text.lower() == "перевірити рахунок":
+    elif message.text.lower() in ["робота з рахунком", "перевірити рахунок"]:
         ivan.send_message(message.chat.id, f"Стан вашого рахунку - {check_account(message)} ₴",
                           reply_markup=work_with_a_cash_keyboard)
 
@@ -58,17 +66,20 @@ def get_text(message):
         ivan.register_next_step_handler(ivan.send_message(message.chat.id, "На яку суму бажаєте поповнити рахунок?"),
                                         plas_balance)
 
-    elif message.text == "TV":
+    elif message.text.lower() == "купівля товарів":
         inlines = telebot.types.InlineKeyboardMarkup()
-        for elem in product_tv:
-            inlines.add(telebot.types.InlineKeyboardButton(text=elem, callback_data=elem))
-        ivan.send_message(message.chat.id, "TV:", reply_markup=inlines)
+        for elem in product():
+            inlines.add(telebot.types.InlineKeyboardButton(text=f"{elem} ₴", callback_data=elem))
+        inlines.add(telebot.types.InlineKeyboardButton(text="Перевірити рахунок", callback_data="Перевірити рахунок"))
+        inlines.add(telebot.types.InlineKeyboardButton(text="Переглянути кошик", callback_data="Переглянути кошик"))
+        inlines.add(telebot.types.InlineKeyboardButton(text="Очистити кошик", callback_data="Очистити кошик"))
+        ivan.send_message(message.chat.id, "Сьогоднішній перелік товарів:", reply_markup=inlines)
 
 
     elif message.text.lower() == "повернутись у головне меню":
         ivan.send_message(message.chat.id, 'Повернення у головне меню', reply_markup=main_keyboard)
 
-
+    print(message.text)
 def check_account(message):  # Функція для перевірки баланса
     file = open(clients, "r", encoding='utf-8')
     all_users = file.read().split("\n")
@@ -80,10 +91,22 @@ def check_account(message):  # Функція для перевірки бала
     return user_balance
 
 
+def product():
+    file = open(product_shop, "r", encoding='utf-8')
+    product = file.read().split("\n")
+    file.close()
+    return product
+
+
 @ivan.callback_query_handler(func=lambda call: True)
 def callback_data(call):
-    if call.data:
-        ivan.send_message(call.message.chat.id, "Зробіть подальший вибір")
+    if call.data in product():
+        ivan.send_message(call.message.chat.id, f"{call.data} ₴ додано до кошика")
+    elif call.data == "Перевірити рахунок":
+        ivan.send_message(call.message.chat.id, f"Стан вашого рахунку - {check_account(call.message)} ₴")
+    elif call.data == "Переглянути кошик":
+        pass
+
 
 
 def registration(message):
