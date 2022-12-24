@@ -1,3 +1,5 @@
+import json
+
 import telebot
 import os.path
 from telebot import types
@@ -5,6 +7,7 @@ import time
 
 clients = os.path.join("Data_base", "Clients.txt")
 product_shop = os.path.join("Data_base", "Shop.txt")
+user_product = os.path.join("Data_base", "User_product.json")
 
 config = {
     "name": "Python_waran_bot",
@@ -28,12 +31,6 @@ button_top_up_the_account = types.InlineKeyboardButton("Поповнити ра�
 button_return_to_the_main_menu = types.InlineKeyboardButton("Повернутись у головне меню")
 work_with_a_cash_keyboard.add(button_check_account, button_top_up_the_account, button_return_to_the_main_menu)
 
-by_keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-button_purchase_of_goods = types.InlineKeyboardButton("Купівля товарів")
-button_check_account = types.InlineKeyboardButton("Перевірити рахунок")
-button_view_cart = types.InlineKeyboardButton("Переглянути кошик")
-button_clear_the_basket= types.InlineKeyboardButton("Очистити кошик")
-by_keyboard.add(button_purchase_of_goods,button_view_cart, button_check_account, button_clear_the_basket)
 
 ivan = telebot.TeleBot(config["token"])
 
@@ -72,9 +69,9 @@ def get_text(message):
             inlines.add(telebot.types.InlineKeyboardButton(text=f"{elem} ₴", callback_data=elem))
         inlines.add(telebot.types.InlineKeyboardButton(text="Перевірити рахунок", callback_data="Перевірити рахунок"))
         inlines.add(telebot.types.InlineKeyboardButton(text="Переглянути кошик", callback_data="Переглянути кошик"))
+        inlines.add(telebot.types.InlineKeyboardButton(text="Провести оплату замовлення", callback_data="Провести оплату замовлення"))
         inlines.add(telebot.types.InlineKeyboardButton(text="Очистити кошик", callback_data="Очистити кошик"))
         ivan.send_message(message.chat.id, "Сьогоднішній перелік товарів:", reply_markup=inlines)
-
 
     elif message.text.lower() == "повернутись у головне меню":
         ivan.send_message(message.chat.id, 'Повернення у головне меню', reply_markup=main_keyboard)
@@ -98,15 +95,49 @@ def product():
     return product
 
 
+def chec_user_prod(call):
+    with open(user_product, "r", encoding='utf-8') as r_file:
+        user_prod = json.load(r_file)
+    user_prod_var = ""
+    user_prod_sum = 0.0
+    print("user_prod_sum = ", type(user_prod_sum))
+    for i in user_prod[f"{call.message.chat.id}"]:
+        user_prod_var += f"{i}\n"
+        user_prod_sum += user_prod[f'{call.message.chat.id}'][i]
+    all_info_user_prod = [user_prod_var, user_prod_sum]
+    return all_info_user_prod
+
 @ivan.callback_query_handler(func=lambda call: True)
 def callback_data(call):
-    if call.data in product():
+    if call.data in product():  # Перевірка чи є натиснена кнопка переліком товару
         ivan.send_message(call.message.chat.id, f"{call.data} ₴ додано до кошика")
-    elif call.data == "Перевірити рахунок":
-        ivan.send_message(call.message.chat.id, f"Стан вашого рахунку - {check_account(call.message)} ₴")
-    elif call.data == "Переглянути кошик":
-        pass
+        with open(user_product, "r", encoding='utf-8') as r_file:
+            user_prod = json.load(r_file)
+        if call.data.split(' - ')[0] in user_prod[f"{call.message.chat.id}"].keys():    # Перевіряємо чи є у корзині такий товару
+            user_prod[f"{call.message.chat.id}"][call.data.split(' - ')[0]] += float(call.data.split(' - ')[1])
+        else:
+            user_prod[f"{call.message.chat.id}"][call.data.split(' - ')[0]] = float(call.data.split(' - ')[1])
+        with open(user_product, "w", encoding='utf-8') as w_file:
+            json.dump(user_prod, w_file, ensure_ascii=False)
 
+    elif call.data.lower() == "переглянути кошик":
+        ivan.send_message(call.message.chat.id, f"Ви замовили товари:\n{chec_user_prod(call)[0]}\n Сума покупки: {chec_user_prod(call)[1]} ₴")
+
+    elif call.data.lower() == "Перевірити рахунок":
+        ivan.send_message(call.message.chat.id, f"Стан вашого рахунку - {check_account(call.message)} ₴")
+
+    elif call.data.lower() == "Очистити кошик":
+        with open(user_product, "r", encoding='utf-8') as r_file:
+            user_prod = json.load(r_file)
+        user_prod[f'{call.message.chat.id}'] = {}
+        with open(user_product, "w", encoding='utf-8') as w_file:
+            json.dump(user_prod, w_file, ensure_ascii=False)
+        ivan.send_message(call.message.chat.id, "Кошик очищено")
+
+    elif call.data.lower() == "провести оплату замовлення":
+
+
+        ivan.send_message(call.message.chat.id, "Перейдіть за посил")
 
 
 def registration(message):
@@ -154,9 +185,17 @@ def authorization(message):
                 file = open(clients, "w", encoding='utf-8')
                 file.write(var_var[0:len(var_var) - 1])
                 file.close()
+                with open(user_product, "r", encoding='utf-8') as r_file:   # Створюємо змінну у файлі покупок для цього клієнта
+                    user_prod = json.load(r_file)
+                    user_prod[message.chat.id] = {}
+                with open(user_product, "w", encoding='utf-8') as w_file:
+                    json.dump(user_prod, w_file)
                 break
     if var == 0:
         ivan.send_message(message.chat.id, f"Невірно введений пароль, або ви не зареєстровані у системиі")
+
+
+
 
 
 def plas_balance(message):
@@ -178,12 +217,8 @@ def plas_balance(message):
     ivan.send_message(message.chat.id, plas_balance)
 
 
-def cash(message):
-    pass
-
-
-def menu(message):
-    pass
-
 
 ivan.polling(none_stop=True, interval=0)
+
+
+# {"1078434603": {}}
