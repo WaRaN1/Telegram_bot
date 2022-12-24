@@ -123,21 +123,16 @@ def callback_data(call):
     elif call.data.lower() == "переглянути кошик":
         ivan.send_message(call.message.chat.id, f"Ви замовили товари:\n{chec_user_prod(call)[0]}\n Сума покупки: {chec_user_prod(call)[1]} ₴")
 
-    elif call.data.lower() == "Перевірити рахунок":
+    elif call.data.lower() == "перевірити рахунок":
         ivan.send_message(call.message.chat.id, f"Стан вашого рахунку - {check_account(call.message)} ₴")
 
-    elif call.data.lower() == "Очистити кошик":
-        with open(user_product, "r", encoding='utf-8') as r_file:
-            user_prod = json.load(r_file)
-        user_prod[f'{call.message.chat.id}'] = {}
-        with open(user_product, "w", encoding='utf-8') as w_file:
-            json.dump(user_prod, w_file, ensure_ascii=False)
+    elif call.data.lower() == "очистити кошик":
+        clear_user_product(call)
         ivan.send_message(call.message.chat.id, "Кошик очищено")
 
     elif call.data.lower() == "провести оплату замовлення":
-
-
-        ivan.send_message(call.message.chat.id, "Перейдіть за посил")
+        clear_user_product(call)
+        ivan.send_message(call.message.chat.id, "Оплату проведено", minus_balance(call))
 
 
 def registration(message):
@@ -195,17 +190,13 @@ def authorization(message):
         ivan.send_message(message.chat.id, f"Невірно введений пароль, або ви не зареєстровані у системиі")
 
 
-
-
-
 def plas_balance(message):
     file = open(clients, "r", encoding='utf-8')
     all_users = file.read().split("\n")
     file.close()
     for ind in range(len(all_users)):
         if all_users[ind].split("/")[0] == str(message.chat.id):
-            all_users[
-                ind] = f"{all_users[ind].split('/')[0]}/{all_users[ind].split('/')[1]}/{all_users[ind].split('/')[2]}/{float(all_users[ind].split('/')[3]) + float(message.text)}"
+            all_users[ind] = f"{all_users[ind].split('/')[0]}/{all_users[ind].split('/')[1]}/{all_users[ind].split('/')[2]}/{float(all_users[ind].split('/')[3]) + float(message.text)}"
             break
     var_var = ''
     for ind in range(len(all_users)):
@@ -216,6 +207,31 @@ def plas_balance(message):
     plas_balance = "https://www.portmone.com.ua/popovnyty-rakhunok-mobilnoho?gclid=Cj0KCQiA45qdBhD-ARIsAOHbVdFrlNp38FMOhwif78In6fNRi-hlSVrfjlOp6US5LeP3dsr37Z9OzjQaAvNyEALw_wcB"
     ivan.send_message(message.chat.id, plas_balance)
 
+
+def minus_balance(call):
+    file = open(clients, "r", encoding='utf-8')
+    all_users = file.read().split("\n")
+    file.close()
+    for ind in range(len(all_users)):
+        if all_users[ind].split("/")[0] == str(call.message.chat.id):
+            all_users[ind] = f"{all_users[ind].split('/')[0]}/{all_users[ind].split('/')[1]}/{all_users[ind].split('/')[2]}/{float(all_users[ind].split('/')[3]) - chec_user_prod(call)[1]}"
+            break
+    var_var = ''
+    for ind in range(len(all_users)):
+        var_var += f'{all_users[ind]}\n'
+    file = open(clients, "w", encoding='utf-8')
+    file.write(var_var[0:len(var_var) - 1])
+    file.close()
+    minus_balance = "https://www.portmone.com.ua/popovnyty-rakhunok-mobilnoho?gclid=Cj0KCQiA45qdBhD-ARIsAOHbVdFrlNp38FMOhwif78In6fNRi-hlSVrfjlOp6US5LeP3dsr37Z9OzjQaAvNyEALw_wcB"
+    ivan.send_message(call.message.chat.id, minus_balance)
+
+
+def clear_user_product(call):
+    with open(user_product, "r", encoding='utf-8') as r_file:
+        user_prod = json.load(r_file)
+    user_prod[f'{call.message.chat.id}'] = {}
+    with open(user_product, "w", encoding='utf-8') as w_file:
+        json.dump(user_prod, w_file, ensure_ascii=False)
 
 
 ivan.polling(none_stop=True, interval=0)
