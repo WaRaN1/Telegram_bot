@@ -73,6 +73,11 @@ def get_text(message):
         inlines.add(telebot.types.InlineKeyboardButton(text="Очистити кошик", callback_data="Очистити кошик"))
         ivan.send_message(message.chat.id, "Сьогоднішній перелік товарів:", reply_markup=inlines)
 
+    elif message.text.lower() == "тренування":
+        inlines = telebot.types.InlineKeyboardMarkup()
+
+
+
     elif message.text.lower() == "повернутись у головне меню":
         ivan.send_message(message.chat.id, 'Повернення у головне меню', reply_markup=main_keyboard)
 
