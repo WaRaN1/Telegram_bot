@@ -95,33 +95,37 @@ def get_text(message):
         ivan.send_message(message.chat.id, 'Повернення у головне меню', reply_markup=main_keyboard)
 
     elif message.text.lower() == "переглянути замовлені тренування":  # Вивід всіх передзамовлених тренувань з тренером
-        with open(trainer_all_time, "r", encoding='utf-8') as r_file:
-            trainer_time_all = json.load(r_file)
-        rozcklad = "Призначені тренування на наступний тиждень:\n\n"
-        for el in trainer_time_all:
-            for elem in trainer_time_all[el]:
-                for tim in trainer_time_all[el][elem]:
-                    if trainer_time_all[el][elem][tim] == str(message.chat.id):
-                        name_trainer_a = trainer_time_all[el][elem]
-                        for i in trainer_time_all[el].keys():
-                            if trainer_time_all[el][i] == name_trainer_a:
-                                rozcklad += f"День тренування: {el}\n"
-                                rozcklad += f"Час тренування:  {elem}\n"
-                                for i in trainer_time_all[el][elem].keys():
-                                    if trainer_time_all[el][elem][i] == str(message.chat.id):
-                                        rozcklad += f"Ваш тренер:      {i}\n\n"
-                                break
-        ivan.send_message(message.chat.id, rozcklad)
+        ivan.send_message(message.chat.id, rozcklad_all(message))
 
+
+def rozcklad_all(message):
+    with open(trainer_all_time, "r", encoding='utf-8') as r_file:
+        trainer_time_all = json.load(r_file)
+    rozcklad = "Призначені тренування на наступний тиждень:\n\n"
+    for el in trainer_time_all:
+        for elem in trainer_time_all[el]:
+            for tim in trainer_time_all[el][elem]:
+                if trainer_time_all[el][elem][tim] == str(message.chat.id):
+                    name_trainer_a = trainer_time_all[el][elem]
+                    for i in trainer_time_all[el].keys():
+                        if trainer_time_all[el][i] == name_trainer_a:
+                            rozcklad += f"День тренування: {el}\n"
+                            rozcklad += f"Час тренування:    {elem}\n"
+                            for i in trainer_time_all[el][elem].keys():
+                                if trainer_time_all[el][elem][i] == str(message.chat.id):
+                                    rozcklad += f"Ваш тренер:            {i}\n\n"
+                            break
+    return rozcklad
 
 def trainer_time(message):
     if message.text.lower() == "повернутись у головне меню":  # Щоб уникнути крашу при виборі не тренера а повернення у головне меню
         ivan.send_message(message.chat.id, 'Повернення у головне меню', reply_markup=main_keyboard)
+    elif message.text.lower() == "переглянути замовлені тренування":    # Щоб уникнути крашу при виборі не тренера а перерегляд замовлених тренувань
+        ivan.send_message(message.chat.id, rozcklad_all(message))
     else:
         ivan.send_message(message.chat.id, f'Ви обрали тренера {message.text}. Оберіть день для тренувань та час')
         with open(trainer_all_time, "r", encoding='utf-8') as r_file:
             trainer_time_all = json.load(r_file)
-        print(trainer_time_all)
         inlines_time = telebot.types.InlineKeyboardMarkup()
         for day in trainer_time_all:
             inlines_time.add(
