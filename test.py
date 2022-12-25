@@ -6,7 +6,8 @@
 # print(my_dict)
 
 
-var = {"1078434603": {"Вода 0.5": "13", "Вода 1.5": "25", "Печиво \"Олімпія\"": "25"}}
-for i in var["1078434603"]:
+var = {"10": {}, "20": {}}
+name = var.keys()
+print(name)
+for i in name:
     print(i)
-    print(var["1078434603"][i])

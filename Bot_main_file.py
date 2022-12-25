@@ -8,6 +8,10 @@ import time
 clients = os.path.join("Data_base", "Clients.txt")
 product_shop = os.path.join("Data_base", "Shop.txt")
 user_product = os.path.join("Data_base", "User_product.json")
+trainer_all = os.path.join("Data_base", "Treiner.json")
+
+with open(trainer_all, "r", encoding='utf-8') as file:
+    nane_trainer = json.load(file)
 
 config = {
     "name": "Python_waran_bot",
@@ -30,6 +34,12 @@ button_check_account = types.InlineKeyboardButton("Перевірити раху
 button_top_up_the_account = types.InlineKeyboardButton("Поповнити рахунок")
 button_return_to_the_main_menu = types.InlineKeyboardButton("Повернутись у головне меню")
 work_with_a_cash_keyboard.add(button_check_account, button_top_up_the_account, button_return_to_the_main_menu)
+
+trainer_keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
+for i in nane_trainer.keys():
+    trainer_keyboard.add(types.InlineKeyboardButton(f"{i}", f"{i}"))
+button_return_to_the_main_menu = types.InlineKeyboardButton("Повернутись у головне меню")
+trainer_keyboard.add(button_return_to_the_main_menu)
 
 
 ivan = telebot.TeleBot(config["token"])
@@ -74,8 +84,13 @@ def get_text(message):
         ivan.send_message(message.chat.id, "Сьогоднішній перелік товарів:", reply_markup=inlines)
 
     elif message.text.lower() == "тренування":
-        inlines = telebot.types.InlineKeyboardMarkup()
-
+        ivan.send_message(message.chat.id, 'Оберіть одного з наших тренерів', reply_markup=trainer_keyboard)
+        # with open(trainer_all, "r", encoding='utf-8') as file:
+        #     nane_trainer = json.load(file)
+        # inlines = telebot.types.InlineKeyboardMarkup()
+        # for elem in nane_trainer:
+        #     inlines.add(telebot.types.InlineKeyboardButton(text=f"{elem}", callback_data=elem))
+        # ivan.send_message(message.chat.id, "Сьогоднішній перелік товарів:", reply_markup=inlines)
 
 
     elif message.text.lower() == "повернутись у головне меню":
