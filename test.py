@@ -4,10 +4,15 @@
 # print(my_dict)
 # my_dict.update({'another_key': my_dict["another_key"] + 5})  # Обновляем.
 # print(my_dict)
+import os
+import json
 
 
-var = {"10": {}, "20": {}}
-name = var.keys()
-print(name)
-for i in name:
-    print(i)
+a = {"1": {"1": 2}}
+x = {"1": 2}
+for i in a:
+    print(a[i])
+    if x == a[i]:
+        print("Yes")
+    else:
+        print("No")

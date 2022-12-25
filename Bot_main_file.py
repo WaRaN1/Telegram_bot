@@ -8,10 +8,12 @@ import time
 clients = os.path.join("Data_base", "Clients.txt")
 product_shop = os.path.join("Data_base", "Shop.txt")
 user_product = os.path.join("Data_base", "User_product.json")
-trainer_all = os.path.join("Data_base", "Treiner.json")
+trainer_all_time = os.path.join("Data_base", "Treiner.json")
+trainer_all = os.path.join("Data_base", "Treiner_all.json")
 
 with open(trainer_all, "r", encoding='utf-8') as file:
-    nane_trainer = json.load(file)
+    name_trainer = json.load(file)
+name = name_trainer.keys()
 
 config = {
     "name": "Python_waran_bot",
@@ -35,12 +37,12 @@ button_top_up_the_account = types.InlineKeyboardButton("Поповнити ра�
 button_return_to_the_main_menu = types.InlineKeyboardButton("Повернутись у головне меню")
 work_with_a_cash_keyboard.add(button_check_account, button_top_up_the_account, button_return_to_the_main_menu)
 
-trainer_keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-for i in nane_trainer.keys():
+trainer_keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)  # Вивід всіх наявних тренерів на кнопки
+for i in name_trainer.keys():
     trainer_keyboard.add(types.InlineKeyboardButton(f"{i}", f"{i}"))
-button_return_to_the_main_menu = types.InlineKeyboardButton("Повернутись у головне меню")
-trainer_keyboard.add(button_return_to_the_main_menu)
-
+button_traine_user = types.InlineKeyboardButton("Повернутись у головне меню")
+button_return_to_the_main_menu = types.InlineKeyboardButton("Переглянути замовлені тренування")
+trainer_keyboard.add(button_return_to_the_main_menu, button_traine_user)
 
 ivan = telebot.TeleBot(config["token"])
 
@@ -79,24 +81,58 @@ def get_text(message):
             inlines.add(telebot.types.InlineKeyboardButton(text=f"{elem} ₴", callback_data=elem))
         inlines.add(telebot.types.InlineKeyboardButton(text="Перевірити рахунок", callback_data="Перевірити рахунок"))
         inlines.add(telebot.types.InlineKeyboardButton(text="Переглянути кошик", callback_data="Переглянути кошик"))
-        inlines.add(telebot.types.InlineKeyboardButton(text="Провести оплату замовлення", callback_data="Провести оплату замовлення"))
+        inlines.add(telebot.types.InlineKeyboardButton(text="Провести оплату замовлення",
+                                                       callback_data="Провести оплату замовлення"))
         inlines.add(telebot.types.InlineKeyboardButton(text="Очистити кошик", callback_data="Очистити кошик"))
         ivan.send_message(message.chat.id, "Сьогоднішній перелік товарів:", reply_markup=inlines)
 
     elif message.text.lower() == "тренування":
-        ivan.send_message(message.chat.id, 'Оберіть одного з наших тренерів', reply_markup=trainer_keyboard)
-        # with open(trainer_all, "r", encoding='utf-8') as file:
-        #     nane_trainer = json.load(file)
-        # inlines = telebot.types.InlineKeyboardMarkup()
-        # for elem in nane_trainer:
-        #     inlines.add(telebot.types.InlineKeyboardButton(text=f"{elem}", callback_data=elem))
-        # ivan.send_message(message.chat.id, "Сьогоднішній перелік товарів:", reply_markup=inlines)
-
+        ivan.register_next_step_handler(
+            ivan.send_message(message.chat.id, "Оберіть одного з наших тренерів", reply_markup=trainer_keyboard),
+            trainer_time)
 
     elif message.text.lower() == "повернутись у головне меню":
         ivan.send_message(message.chat.id, 'Повернення у головне меню', reply_markup=main_keyboard)
 
-    print(message.text)
+    elif message.text.lower() == "переглянути замовлені тренування":  # Вивід всіх передзамовлених тренувань з тренером
+        with open(trainer_all_time, "r", encoding='utf-8') as r_file:
+            trainer_time_all = json.load(r_file)
+        rozcklad = "Призначені тренування на наступний тиждень:\n\n"
+        for el in trainer_time_all:
+            for elem in trainer_time_all[el]:
+                for tim in trainer_time_all[el][elem]:
+                    if trainer_time_all[el][elem][tim] == str(message.chat.id):
+                        name_trainer_a = trainer_time_all[el][elem]
+                        for i in trainer_time_all[el].keys():
+                            if trainer_time_all[el][i] == name_trainer_a:
+                                rozcklad += f"День тренування: {el}\n"
+                                rozcklad += f"Час тренування:  {elem}\n"
+                                for i in trainer_time_all[el][elem].keys():
+                                    if trainer_time_all[el][elem][i] == str(message.chat.id):
+                                        rozcklad += f"Ваш тренер:      {i}\n\n"
+                                break
+        ivan.send_message(message.chat.id, rozcklad)
+
+
+def trainer_time(message):
+    if message.text.lower() == "повернутись у головне меню":  # Щоб уникнути крашу при виборі не тренера а повернення у головне меню
+        ivan.send_message(message.chat.id, 'Повернення у головне меню', reply_markup=main_keyboard)
+    else:
+        ivan.send_message(message.chat.id, f'Ви обрали тренера {message.text}. Оберіть день для тренувань та час')
+        with open(trainer_all_time, "r", encoding='utf-8') as r_file:
+            trainer_time_all = json.load(r_file)
+        print(trainer_time_all)
+        inlines_time = telebot.types.InlineKeyboardMarkup()
+        for day in trainer_time_all:
+            inlines_time.add(
+                telebot.types.InlineKeyboardButton(text=f"-----------------       {day}       -----------------",
+                                                   callback_data=day))
+            for time_d in trainer_time_all[day]:
+                if message.text not in trainer_time_all[day][time_d]:
+                    inlines_time.add(telebot.types.InlineKeyboardButton(text=time_d, callback_data=f"{day}/{time_d}"))
+        ivan.send_message(message.chat.id, f"{message.text}", reply_markup=inlines_time)
+
+
 def check_account(message):  # Функція для перевірки баланса
     file = open(clients, "r", encoding='utf-8')
     all_users = file.read().split("\n")
@@ -127,13 +163,15 @@ def chec_user_prod(call):
     all_info_user_prod = [user_prod_var, user_prod_sum]
     return all_info_user_prod
 
+
 @ivan.callback_query_handler(func=lambda call: True)
 def callback_data(call):
     if call.data in product():  # Перевірка чи є натиснена кнопка переліком товару
         ivan.send_message(call.message.chat.id, f"{call.data} ₴ додано до кошика")
         with open(user_product, "r", encoding='utf-8') as r_file:
             user_prod = json.load(r_file)
-        if call.data.split(' - ')[0] in user_prod[f"{call.message.chat.id}"].keys():    # Перевіряємо чи є у корзині такий товару
+        if call.data.split(' - ')[0] in user_prod[
+            f"{call.message.chat.id}"].keys():  # Перевіряємо чи є у корзині такий товару
             user_prod[f"{call.message.chat.id}"][call.data.split(' - ')[0]] += float(call.data.split(' - ')[1])
         else:
             user_prod[f"{call.message.chat.id}"][call.data.split(' - ')[0]] = float(call.data.split(' - ')[1])
@@ -141,7 +179,8 @@ def callback_data(call):
             json.dump(user_prod, w_file, ensure_ascii=False)
 
     elif call.data.lower() == "переглянути кошик":
-        ivan.send_message(call.message.chat.id, f"Ви замовили товари:\n{chec_user_prod(call)[0]}\n Сума покупки: {chec_user_prod(call)[1]} ₴")
+        ivan.send_message(call.message.chat.id,
+                          f"Ви замовили товари:\n{chec_user_prod(call)[0]}\n Сума покупки: {chec_user_prod(call)[1]} ₴")
 
     elif call.data.lower() == "перевірити рахунок":
         ivan.send_message(call.message.chat.id, f"Стан вашого рахунку - {check_account(call.message)} ₴")
@@ -153,6 +192,15 @@ def callback_data(call):
     elif call.data.lower() == "провести оплату замовлення":
         clear_user_product(call)
         ivan.send_message(call.message.chat.id, "Оплату проведено", minus_balance(call))
+
+    elif call.message.text in name_trainer:
+        with open(trainer_all_time, "r", encoding='utf-8') as r_file:
+            n_d_t = json.load(r_file)
+        print(n_d_t[call.data.split("/")[0]][call.data.split("/")[1]])
+        n_d_t[call.data.split("/")[0]][call.data.split("/")[1]].update(
+            {f"{call.message.text}": f"{call.message.chat.id}"})
+        with open(trainer_all_time, "w", encoding='utf-8') as w_file:
+            json.dump(n_d_t, w_file, ensure_ascii=False)
 
 
 def registration(message):
@@ -200,7 +248,8 @@ def authorization(message):
                 file = open(clients, "w", encoding='utf-8')
                 file.write(var_var[0:len(var_var) - 1])
                 file.close()
-                with open(user_product, "r", encoding='utf-8') as r_file:   # Створюємо змінну у файлі покупок для цього клієнта
+                with open(user_product, "r",
+                          encoding='utf-8') as r_file:  # Створюємо змінну у файлі покупок для цього клієнта
                     user_prod = json.load(r_file)
                     user_prod[message.chat.id] = {}
                 with open(user_product, "w", encoding='utf-8') as w_file:
@@ -216,7 +265,8 @@ def plas_balance(message):
     file.close()
     for ind in range(len(all_users)):
         if all_users[ind].split("/")[0] == str(message.chat.id):
-            all_users[ind] = f"{all_users[ind].split('/')[0]}/{all_users[ind].split('/')[1]}/{all_users[ind].split('/')[2]}/{float(all_users[ind].split('/')[3]) + float(message.text)}"
+            all_users[
+                ind] = f"{all_users[ind].split('/')[0]}/{all_users[ind].split('/')[1]}/{all_users[ind].split('/')[2]}/{float(all_users[ind].split('/')[3]) + float(message.text)}"
             break
     var_var = ''
     for ind in range(len(all_users)):
@@ -234,7 +284,8 @@ def minus_balance(call):
     file.close()
     for ind in range(len(all_users)):
         if all_users[ind].split("/")[0] == str(call.message.chat.id):
-            all_users[ind] = f"{all_users[ind].split('/')[0]}/{all_users[ind].split('/')[1]}/{all_users[ind].split('/')[2]}/{float(all_users[ind].split('/')[3]) - chec_user_prod(call)[1]}"
+            all_users[
+                ind] = f"{all_users[ind].split('/')[0]}/{all_users[ind].split('/')[1]}/{all_users[ind].split('/')[2]}/{float(all_users[ind].split('/')[3]) - chec_user_prod(call)[1]}"
             break
     var_var = ''
     for ind in range(len(all_users)):
@@ -255,6 +306,3 @@ def clear_user_product(call):
 
 
 ivan.polling(none_stop=True, interval=0)
-
-
-# {"1078434603": {}}
