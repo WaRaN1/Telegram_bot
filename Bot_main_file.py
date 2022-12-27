@@ -61,11 +61,6 @@ def start(message):
 
 @ivan.message_handler(content_types=["text"])
 def get_text(message):
-    # now_time = time.time()
-    # file = open(clients, "r", encoding='utf-8')
-    # user_time_all = file.read().split("\n")
-    # user_time_all = user_time_all[0:len(user_time_all)-1]
-    # file.close()
     file = open(clients, "r", encoding='utf-8')
     user_time_all = file.read().split("\n")
     file.close()
