@@ -52,7 +52,12 @@ def start(message):
     ivan.send_message(message.chat.id,
                       "Вітаємо у системі спортзалу, якщо ви є нашим клієнтом, то пройдіть авторизацію, "
                       "а якщо ні, то ласкаво просимо на реєстрацію", reply_markup=free_access)
-
+    if message.text.lower() == "авторизація":
+        ivan.register_next_step_handler(ivan.send_message(message.chat.id, "Введіть пароль для входу"),
+                                        authorization)
+    elif message.text.lower() == "реєстрація":
+        ivan.register_next_step_handler(ivan.send_message(message.chat.id, "Придумайте пароль (не менше шести "
+                                                                           "символів)"), registration)
 
 @ivan.message_handler(content_types=["text"])
 def get_text(message):
@@ -61,42 +66,55 @@ def get_text(message):
     # user_time_all = file.read().split("\n")
     # user_time_all = user_time_all[0:len(user_time_all)-1]
     # file.close()
-    if message.text.lower() == "авторизація":
-        ivan.register_next_step_handler(ivan.send_message(message.chat.id, "Введіть пароль для входу"),
-                                        authorization)
-    elif message.text.lower() == "реєстрація":
-        ivan.register_next_step_handler(ivan.send_message(message.chat.id, "Придумайте пароль (не менше шести "
-                                                                           "символів)"), registration)
-    elif message.text.lower() in ["робота з рахунком", "перевірити рахунок"]:
-        ivan.send_message(message.chat.id, f"Стан вашого рахунку - {check_account(message)} ₴",
-                          reply_markup=work_with_a_cash_keyboard)
+    file = open(clients, "r", encoding='utf-8')
+    user_time_all = file.read().split("\n")
+    file.close()
+    var_step = 0
 
-    elif message.text.lower() == "поповнити рахунок":
-        ivan.register_next_step_handler(ivan.send_message(message.chat.id, "На яку суму бажаєте поповнити рахунок?"),
-                                        plas_balance)
+    for el in user_time_all:
+        if el.split("/")[0] == str(message.chat.id) and (time.time() - float(el.split("/")[2])) < 84600:
+            var_step = 1
+    if var_step == 1:
 
-    elif message.text.lower() == "купівля товарів":
-        inlines = telebot.types.InlineKeyboardMarkup()
-        for elem in product():
-            inlines.add(telebot.types.InlineKeyboardButton(text=f"{elem} ₴", callback_data=elem))
-        inlines.add(telebot.types.InlineKeyboardButton(text="Перевірити рахунок", callback_data="Перевірити рахунок"))
-        inlines.add(telebot.types.InlineKeyboardButton(text="Переглянути кошик", callback_data="Переглянути кошик"))
-        inlines.add(telebot.types.InlineKeyboardButton(text="Провести оплату замовлення",
-                                                       callback_data="Провести оплату замовлення"))
-        inlines.add(telebot.types.InlineKeyboardButton(text="Очистити кошик", callback_data="Очистити кошик"))
-        ivan.send_message(message.chat.id, "Сьогоднішній перелік товарів:", reply_markup=inlines)
+        if message.text.lower() in ["робота з рахунком", "перевірити рахунок"]:
+            ivan.send_message(message.chat.id, f"Стан вашого рахунку - {check_account(message)} ₴",
+                              reply_markup=work_with_a_cash_keyboard)
 
-    elif message.text.lower() == "тренування":
-        ivan.register_next_step_handler(
-            ivan.send_message(message.chat.id, "Оберіть одного з наших тренерів", reply_markup=trainer_keyboard),
-            trainer_time)
+        elif message.text.lower() == "поповнити рахунок":
+            ivan.register_next_step_handler(ivan.send_message(message.chat.id, "На яку суму бажаєте поповнити рахунок?"),
+                                            plas_balance)
 
-    elif message.text.lower() == "повернутись у головне меню":
-        ivan.send_message(message.chat.id, 'Повернення у головне меню', reply_markup=main_keyboard)
+        elif message.text.lower() == "купівля товарів":
+            inlines = telebot.types.InlineKeyboardMarkup()
+            for elem in product():
+                inlines.add(telebot.types.InlineKeyboardButton(text=f"{elem} ₴", callback_data=elem))
+            inlines.add(telebot.types.InlineKeyboardButton(text="Перевірити рахунок", callback_data="Перевірити рахунок"))
+            inlines.add(telebot.types.InlineKeyboardButton(text="Переглянути кошик", callback_data="Переглянути кошик"))
+            inlines.add(telebot.types.InlineKeyboardButton(text="Провести оплату замовлення",
+                                                           callback_data="Провести оплату замовлення"))
+            inlines.add(telebot.types.InlineKeyboardButton(text="Очистити кошик", callback_data="Очистити кошик"))
+            ivan.send_message(message.chat.id, "Сьогоднішній перелік товарів:", reply_markup=inlines)
 
-    elif message.text.lower() == "переглянути замовлені тренування":  # Вивід всіх передзамовлених тренувань з тренером
-        ivan.send_message(message.chat.id, rozcklad_all(message))
+        elif message.text.lower() == "тренування":
+            ivan.register_next_step_handler(
+                ivan.send_message(message.chat.id, "Оберіть одного з наших тренерів", reply_markup=trainer_keyboard),
+                trainer_time)
 
+        elif message.text.lower() == "повернутись у головне меню":
+            ivan.send_message(message.chat.id, 'Повернення у головне меню', reply_markup=main_keyboard)
+
+        elif message.text.lower() == "переглянути замовлені тренування":  # Вивід всіх передзамовлених тренувань з тренером
+            ivan.send_message(message.chat.id, rozcklad_all(message))
+    else:
+        if message.text.lower() == "авторизація":
+            ivan.register_next_step_handler(ivan.send_message(message.chat.id, "Введіть пароль для входу"),
+                                            authorization)
+        elif message.text.lower() == "реєстрація":
+            ivan.register_next_step_handler(ivan.send_message(message.chat.id, "Придумайте пароль (не менше шести "
+                                                                               "символів)"), registration)
+        else:
+            ivan.send_message(message.chat.id, "Для доступу до функціоналу бота пройдіть авторизацію",
+                              reply_markup=free_access)
 
 def rozcklad_all(message):
     with open(trainer_all_time, "r", encoding='utf-8') as r_file:
