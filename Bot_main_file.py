@@ -160,7 +160,6 @@ def chec_user_prod(call):
         user_prod = json.load(r_file)
     user_prod_var = ""
     user_prod_sum = 0.0
-    print("user_prod_sum = ", type(user_prod_sum))
     for i in user_prod[f"{call.message.chat.id}"]:
         user_prod_var += f"{i}\n"
         user_prod_sum += user_prod[f'{call.message.chat.id}'][i]
@@ -194,8 +193,8 @@ def callback_data(call):
         ivan.send_message(call.message.chat.id, "Кошик очищено")
 
     elif call.data.lower() == "провести оплату замовлення":
-        clear_user_product(call)
         ivan.send_message(call.message.chat.id, "Оплату проведено", minus_balance(call))
+        clear_user_product(call)
 
     elif call.message.text in name_trainer:
         with open(trainer_all_time, "r", encoding='utf-8') as r_file:
@@ -216,8 +215,7 @@ def registration(message):
         file.close()
         clients_n, all_users_now = "-", ""
         for elem in range(len(all_users)):
-            if message.chat.id == int(
-                    all_users[elem].split("/")[0]):  # Перевіряємо чи даний клієнт вже був зареєстрований раніше
+            if str(message.chat.id) == all_users[elem].split("/")[0]:  # Перевіряємо чи даний клієнт вже був зареєстрований раніше
                 print("Yes")
                 all_users[elem] = f"{all_users[elem].split('/')[0]}/{message.text}/{time.time()}/" \
                                   f"{all_users[elem].split('/')[3]}"  # Якщо клієнт є в базі, то просто змінюємо пароль
@@ -286,10 +284,11 @@ def minus_balance(call):
     file = open(clients, "r", encoding='utf-8')
     all_users = file.read().split("\n")
     file.close()
+    rez_sum = ""
     for ind in range(len(all_users)):
         if all_users[ind].split("/")[0] == str(call.message.chat.id):
-            all_users[
-                ind] = f"{all_users[ind].split('/')[0]}/{all_users[ind].split('/')[1]}/{all_users[ind].split('/')[2]}/{float(all_users[ind].split('/')[3]) - chec_user_prod(call)[1]}"
+            rez_sum = float(all_users[ind].split('/')[3]) - chec_user_prod(call)[1]
+            all_users[ind] = f"{all_users[ind].split('/')[0]}/{all_users[ind].split('/')[1]}/{all_users[ind].split('/')[2]}/{rez_sum}"
             break
     var_var = ''
     for ind in range(len(all_users)):
@@ -297,8 +296,7 @@ def minus_balance(call):
     file = open(clients, "w", encoding='utf-8')
     file.write(var_var[0:len(var_var) - 1])
     file.close()
-    minus_balance = "https://www.portmone.com.ua/popovnyty-rakhunok-mobilnoho?gclid=Cj0KCQiA45qdBhD-ARIsAOHbVdFrlNp38FMOhwif78In6fNRi-hlSVrfjlOp6US5LeP3dsr37Z9OzjQaAvNyEALw_wcB"
-    ivan.send_message(call.message.chat.id, minus_balance)
+    ivan.send_message(call.message.chat.id, f"Залишок на рахунку {rez_sum} ₴")
 
 
 def clear_user_product(call):
